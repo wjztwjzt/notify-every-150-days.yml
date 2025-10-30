@@ -1,0 +1,15 @@
+name: 域名xyz续期提醒
+
+on:
+  schedule:
+    - cron: '0 1,5 20 3 *'
+  workflow_dispatch:
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 调用域名xyz提醒
+        run: |
+          echo "📅 域名xyz续期提醒"
+          curl -L "${{ secrets.DOMAIN_A_RENEW_URL }}"
