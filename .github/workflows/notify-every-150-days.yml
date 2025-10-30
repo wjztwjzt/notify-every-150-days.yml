@@ -1,0 +1,56 @@
+name: 每150天执行一次任务
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 每天 UTC 0点运行一次（即北京时间早上8点）
+  workflow_dispatch:      # 可手动触发
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 恢复上次运行时间缓存
+        id: restore-cache
+        uses: actions/cache@v4
+        with:
+          path: .last_run_time
+          key: last-run-time
+
+      - name: 判断是否到150天
+        id: check
+        run: |
+          file=".last_run_time"
+          now=$(date -u +%s)
+          days150=$((150*24*3600))
+
+          if [ ! -f "$file" ]; then
+            echo "$now" > "$file"
+            echo "first_run=true" >> $GITHUB_OUTPUT
+          else
+            last=$(cat "$file")
+            diff=$((now - last))
+            if [ $diff -ge $days150 ]; then
+              echo "$now" > "$file"
+              echo "should_run=true" >> $GITHUB_OUTPUT
+            else
+              echo "should_run=false" >> $GITHUB_OUTPUT
+              echo "距离上次执行还剩 $(( (days150 - diff)/86400 )) 天"
+            fi
+          fi
+
+      - name: 调用URL
+        if: steps.check.outputs.should_run == 'true' || steps.check.outputs.first_run == 'true'
+        run: |
+          echo "✅ 到达150天周期，执行任务..."
+          curl -L "${{ secrets.MY_SECRET_URL }}"
+
+      - name: 更新缓存
+        if: steps.check.outputs.should_run == 'true' || steps.check.outputs.first_run == 'true'
+        uses: actions/cache@v4
+        with:
+          path: .last_run_time
+          key: last-run-time-${{ github.run_id }}
