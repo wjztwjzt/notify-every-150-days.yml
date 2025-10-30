@@ -1,0 +1,15 @@
+name: 域名ioo续期提醒
+
+on:
+  schedule:
+    - cron: '0 1,5 20 6 *'   # 每年6月1日 01:00 UTC（北京时间早上9点）
+  workflow_dispatch:
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 调用域名ioo提醒
+        run: |
+          echo "📅 域名ioo续期提醒"
+          curl -L "${{ secrets.DOMAIN_B_RENEW_URL }}"
